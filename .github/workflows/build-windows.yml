@@ -1,4 +1,4 @@
-```yaml
+
 name: Build qUnleashed Windows
 
 on:
@@ -46,4 +46,3 @@ jobs:
         with:
           name: qUnleashed-Windows
           path: qUnleashed-Windows.zip
-```
