@@ -1,3 +1,4 @@
+```yaml
 name: Build qUnleashed Windows
 
 on:
@@ -24,6 +25,14 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Configure MSVC compatibility
+        shell: powershell
+        run: |
+          $env:CXXFLAGS="/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
+          $env:CFLAGS="/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
+          Add-Content $env:GITHUB_ENV "CXXFLAGS=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
+          Add-Content $env:GITHUB_ENV "CFLAGS=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS"
+
       - name: Build Windows
         run: flutter build windows --release
 
@@ -39,3 +48,4 @@ jobs:
         with:
           name: qUnleashed-Windows
           path: qUnleashed-Windows.zip
+```
