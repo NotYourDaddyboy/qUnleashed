@@ -1,3 +1,4 @@
+```dart
 import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -6,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'firebase_options.dart';
 import 'notification_center.dart';
 
 class PushTopics {
@@ -34,23 +34,31 @@ class PushService {
   bool _started = false;
 
   static bool get isSupported =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+      !kIsWeb &&
+      (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
 
   Future<void> start() async {
     if (_started || !isSupported) return;
     _started = true;
 
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    // Firebase push notifications are not supported on Windows.
+    // The Windows application therefore does not initialize Firebase.
+    await Firebase.initializeApp();
 
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onBackgroundMessage(
+      firebaseMessagingBackgroundHandler,
+    );
 
     await NotificationCenter.instance.initialize();
     await _ensureAndroidChannel();
 
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(alert: true, badge: false, sound: true);
+
+    await messaging.requestPermission(
+      alert: true,
+      badge: false,
+      sound: true,
+    );
 
     await messaging.setForegroundNotificationPresentationOptions(
       alert: true,
@@ -71,7 +79,10 @@ class PushService {
   Future<void> setAppReleasesEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefAppReleases, enabled);
-    if (isSupported) await _applySubscriptions();
+
+    if (isSupported) {
+      await _applySubscriptions();
+    }
   }
 
   Future<bool> isFirmwareReleasesEnabled() async {
@@ -82,7 +93,10 @@ class PushService {
   Future<void> setFirmwareReleasesEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefEnabled, enabled);
-    if (isSupported) await _applySubscriptions();
+
+    if (isSupported) {
+      await _applySubscriptions();
+    }
   }
 
   Future<bool> isFirmwareDevEnabled() async {
@@ -93,20 +107,31 @@ class PushService {
   Future<void> setFirmwareDevEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefDevUpdates, enabled);
-    if (isSupported) await _applySubscriptions();
+
+    if (isSupported) {
+      await _applySubscriptions();
+    }
   }
 
   Future<void> _applySubscriptions() async {
     final messaging = FirebaseMessaging.instance;
+
     final appEnabled = await isAppReleasesEnabled();
     final enabled = await isFirmwareReleasesEnabled();
     final devEnabled = await isFirmwareDevEnabled();
 
     final active = <String>{};
-    if (appEnabled) active.addAll(PushTopics.app);
+
+    if (appEnabled) {
+      active.addAll(PushTopics.app);
+    }
+
     if (enabled) {
       active.addAll(PushTopics.release);
-      if (devEnabled) active.addAll(PushTopics.dev);
+
+      if (devEnabled) {
+        active.addAll(PushTopics.dev);
+      }
     }
 
     for (final topic in PushTopics.all) {
@@ -120,6 +145,7 @@ class PushService {
 
   Future<void> _ensureAndroidChannel() async {
     if (!Platform.isAndroid) return;
+
     await NotificationCenter.instance.plugin
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -136,6 +162,7 @@ class PushService {
 
   Future<void> _showForeground(RemoteMessage message) async {
     final notification = message.notification;
+
     final title = notification?.title ?? 'Update';
     final body = notification?.body ?? '';
 
@@ -147,11 +174,15 @@ class PushService {
         android: AndroidNotificationDetails(
           _androidChannelId,
           'Firmware updates',
-          channelDescription: 'New Flipper firmware releases and dev builds',
+          channelDescription:
+              'New Flipper firmware releases and dev builds',
           importance: Importance.high,
           priority: Priority.high,
         ),
-        iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentSound: true,
+        ),
         macOS: DarwinNotificationDetails(
           presentAlert: true,
           presentSound: true,
@@ -162,4 +193,7 @@ class PushService {
 }
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
+Future<void> firebaseMessagingBackgroundHandler(
+  RemoteMessage message,
+) async {}
+```
